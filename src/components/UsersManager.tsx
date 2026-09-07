@@ -11,8 +11,16 @@ import {
   Search,
   Check,
   X,
+  RotateCcw,
+  Sparkles,
 } from 'lucide-react';
 import { GerenciaAccess } from '@/lib/types';
+import {
+  getStoredResponsables,
+  addStoredResponsable,
+  removeStoredResponsable,
+  resetStoredResponsables,
+} from '@/lib/responsables';
 
 export default function UsersManager() {
   const [users, setUsers] = useState<GerenciaAccess[]>([]);
@@ -21,6 +29,63 @@ export default function UsersManager() {
   const [newEmail, setNewEmail] = useState('');
   const [adding, setAdding] = useState(false);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+
+  // Responsables frecuentes de proyectos (Sugerencias rápidas)
+  const [frequentLeads, setFrequentLeads] = useState<string[]>([]);
+  const [newLeadName, setNewLeadName] = useState('');
+
+  useEffect(() => {
+    setFrequentLeads(getStoredResponsables());
+
+    const handleUpdate = (e: any) => {
+      if (e?.detail && Array.isArray(e.detail)) {
+        setFrequentLeads(e.detail);
+      } else {
+        setFrequentLeads(getStoredResponsables());
+      }
+    };
+
+    window.addEventListener('responsables-updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    return () => {
+      window.removeEventListener('responsables-updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
+  }, []);
+
+  const handleAddLead = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newLeadName.trim()) return;
+    const clean = newLeadName.trim();
+    const updated = addStoredResponsable(clean);
+    setFrequentLeads(updated);
+    setNewLeadName('');
+    setMessage({
+      text: `Persona "${clean}" agregada a las sugerencias rápidas de proyectos.`,
+      type: 'success',
+    });
+    setTimeout(() => setMessage(null), 4000);
+  };
+
+  const handleDeleteLead = (name: string) => {
+    const updated = removeStoredResponsable(name);
+    setFrequentLeads(updated);
+    setMessage({
+      text: `"${name}" removido de las sugerencias rápidas.`,
+      type: 'success',
+    });
+    setTimeout(() => setMessage(null), 4000);
+  };
+
+  const handleResetLeads = () => {
+    const updated = resetStoredResponsables();
+    setFrequentLeads(updated);
+    setMessage({
+      text: 'Sugerencias rápidas restablecidas a los valores predeterminados.',
+      type: 'success',
+    });
+    setTimeout(() => setMessage(null), 4000);
+  };
 
   const fetchUsers = async () => {
     try {
@@ -116,16 +181,111 @@ export default function UsersManager() {
   );
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-      {/* Header */}
-      <div className="p-6 border-b border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <Users className="w-5 h-5 text-indigo-600" />
-            <h2 className="text-lg font-bold text-slate-900 tracking-tight">
-              Control de Accesos para Gerencia
-            </h2>
+    <div className="space-y-6">
+      {/* SECCIÓN 1: Líderes y Responsables de Proyecto (Sugerencias Rápidas) */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+        <div className="p-6 border-b border-slate-200 bg-slate-50/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-blue-100 flex items-center justify-center text-blue-700">
+                <Users className="w-4 h-4" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-slate-900 tracking-tight">
+                  Líderes y Responsables de Proyecto
+                </h2>
+                <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                  Sugerencias Rápidas en Proyectos
+                </span>
+              </div>
+            </div>
+            <p className="text-xs text-slate-500 mt-1.5 max-w-xl">
+              Configura las personas a cargo que aparecen como botones de <strong>Sugerencias Rápidas</strong> al crear o editar proyectos. Agrega a tu equipo para asignarlos con 1 solo clic.
+            </p>
           </div>
+
+          {/* Formulario para agregar nuevo responsable frecuente */}
+          <form onSubmit={handleAddLead} className="flex items-center gap-2">
+            <input
+              type="text"
+              required
+              value={newLeadName}
+              onChange={(e) => setNewLeadName(e.target.value)}
+              placeholder="Nombre completo (ej: Juan Pérez)"
+              className="px-3.5 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-hidden w-64 placeholder:text-slate-400"
+            />
+            <button
+              type="submit"
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors whitespace-nowrap"
+            >
+              <UserPlus className="w-3.5 h-3.5" />
+              Agregar Líder
+            </button>
+          </form>
+        </div>
+
+        {/* Lista de responsables frecuentes configurados */}
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-semibold text-slate-700">
+              Personas frecuentes disponibles ({frequentLeads.length}):
+            </span>
+            <button
+              type="button"
+              onClick={handleResetLeads}
+              className="text-xs text-slate-500 hover:text-slate-700 flex items-center gap-1 transition-colors"
+              title="Restablecer sugerencias predeterminadas"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              Restablecer valores originales
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            {frequentLeads.map((lead) => (
+              <div
+                key={lead}
+                className="flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-white hover:border-blue-200 hover:shadow-xs transition-all group"
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs shrink-0">
+                    {lead.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-slate-900 truncate">
+                      {lead}
+                    </p>
+                    <p className="text-[10px] text-slate-400">
+                      Sugerencia rápida activa
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleDeleteLead(lead)}
+                  className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors opacity-80 group-hover:opacity-100"
+                  title={`Eliminar "${lead}" de sugerencias`}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* SECCIÓN 2: Control de Accesos para Gerencia */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+        {/* Header */}
+        <div className="p-6 border-b border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-indigo-600" />
+              <h2 className="text-lg font-bold text-slate-900 tracking-tight">
+                Control de Accesos para Gerencia
+              </h2>
+            </div>
           <p className="text-xs text-slate-500 mt-1">
             Solo usuarios aprobados con dominios <strong>@patprimo.com.co</strong> o{' '}
             <strong>@pash.com.co</strong> pueden ingresar a la vista de visualización.
@@ -286,6 +446,7 @@ export default function UsersManager() {
           </tbody>
         </table>
       </div>
+    </div>
     </div>
   );
 }

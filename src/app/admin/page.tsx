@@ -39,6 +39,7 @@ export default function AdminPage() {
   // Project Modal
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [projectToEdit, setProjectToEdit] = useState<Project | null>(null);
+  const [pendingUsersCount, setPendingUsersCount] = useState(0);
 
   const fetchSession = async () => {
     try {
@@ -51,6 +52,19 @@ export default function AdminPage() {
       setUser(data.session);
     } catch {
       router.push('/login');
+    }
+  };
+
+  const fetchPendingUsers = async () => {
+    try {
+      const res = await fetch('/api/gerencia-users');
+      const data = await res.json();
+      if (res.ok && Array.isArray(data.users)) {
+        const pending = data.users.filter((u: any) => !u.activo).length;
+        setPendingUsersCount(pending);
+      }
+    } catch {
+      // ignore
     }
   };
 
@@ -72,6 +86,14 @@ export default function AdminPage() {
   useEffect(() => {
     fetchSession();
     fetchProjects();
+    fetchPendingUsers();
+
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('tab') === 'usuarios') {
+        setActiveTab('usuarios');
+      }
+    }
   }, []);
 
   const handleDeleteProject = async (project: Project) => {
@@ -160,7 +182,7 @@ export default function AdminPage() {
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
         {/* Mobile Tab Switcher */}
-        <div className="flex md:hidden bg-slate-200 p-1 rounded-xl">
+        <div className="flex sm:hidden bg-slate-200 p-1 rounded-xl">
           <button
             type="button"
             onClick={() => setActiveTab('proyectos')}
@@ -171,7 +193,7 @@ export default function AdminPage() {
             }`}
           >
             <Layers className="w-3.5 h-3.5" />
-            Proyectos y Fases
+            <span>Proyectos</span>
           </button>
           <button
             type="button"
@@ -183,9 +205,41 @@ export default function AdminPage() {
             }`}
           >
             <Users className="w-3.5 h-3.5" />
-            Acceso Gerencia
+            <span>Gestión Usuarios</span>
+            {pendingUsersCount > 0 && (
+              <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-500 text-white">
+                {pendingUsersCount}
+              </span>
+            )}
           </button>
         </div>
+
+        {/* Banner de alerta si hay solicitudes pendientes de autorización */}
+        {pendingUsersCount > 0 && activeTab === 'proyectos' && (
+          <div className="bg-amber-50 border border-amber-300 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs animate-in fade-in">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center text-amber-700 shrink-0">
+                <Clock className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-amber-900">
+                  {pendingUsersCount} {pendingUsersCount === 1 ? 'usuario esperando autorización' : 'usuarios esperando autorización'}
+                </h4>
+                <p className="text-xs text-amber-700">
+                  Hay solicitudes de acceso de Gerencia pendientes por aprobar para ingresar a la plataforma.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setActiveTab('usuarios')}
+              className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap"
+            >
+              <Users className="w-4 h-4" />
+              Revisar y Aprobar Usuarios
+            </button>
+          </div>
+        )}
 
         {activeTab === 'usuarios' ? (
           <UsersManager />
