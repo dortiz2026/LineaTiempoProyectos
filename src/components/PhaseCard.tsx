@@ -83,15 +83,15 @@ export default function PhaseCard({
             </button>
           )}
 
-          {isAdmin && !phase.es_levantamiento && onDeleteClick && (
+          {isAdmin && onDeleteClick && (
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 onDeleteClick(phase);
               }}
-              title="Eliminar fase"
-              className="p-1 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors opacity-0 group-hover:opacity-100"
+              title="Eliminar tarea"
+              className="p-1 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
             >
               <Trash2 className="w-3.5 h-3.5" />
             </button>

@@ -75,20 +75,6 @@ export async function DELETE(
 
     const { id } = await params;
 
-    // Check if it's the mandatory phase
-    const { data: phase } = await supabaseAdmin
-      .from('phases')
-      .select('es_levantamiento, nombre')
-      .eq('id', id)
-      .single();
-
-    if (phase?.es_levantamiento) {
-      return NextResponse.json(
-        { error: 'La fase "Levantamiento de información" es obligatoria y no puede ser eliminada.' },
-        { status: 400 }
-      );
-    }
-
     const { error } = await supabaseAdmin.from('phases').delete().eq('id', id);
 
     if (error) {
