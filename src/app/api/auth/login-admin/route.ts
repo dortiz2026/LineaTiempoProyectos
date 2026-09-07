@@ -22,8 +22,16 @@ export async function POST(request: Request) {
       .eq('email', cleanEmail)
       .maybeSingle();
 
-    if (error || !user) {
-      return NextResponse.json({ error: 'Credenciales inválidas' }, { status: 401 });
+    if (error) {
+      console.error('Error al consultar admin_users en Supabase:', error);
+      return NextResponse.json(
+        { error: `Error de conexión con Supabase: ${error.message || 'Verifica las variables de entorno en Vercel'}` },
+        { status: 500 }
+      );
+    }
+
+    if (!user) {
+      return NextResponse.json({ error: 'Usuario administrador no encontrado en el sistema' }, { status: 401 });
     }
 
     const isMatch = verifyPassword(password, user.password_hash);
