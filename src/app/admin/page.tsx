@@ -18,6 +18,8 @@ import {
   TrendingUp,
   Calendar,
   User as UserIcon,
+  X,
+  Filter,
 } from 'lucide-react';
 import { Project, UserSession } from '@/lib/types';
 import Navbar from '@/components/Navbar';
@@ -133,28 +135,78 @@ export default function AdminPage() {
         )
       : 0;
 
-  const getTendencyBadgeColor = (status: string) => {
+  const ALL_FILTER_STATUSES = [
+    { id: 'Todos', label: 'Todos', activeColor: 'bg-slate-900 text-white', dot: 'bg-slate-400' },
+    { id: 'En entendimiento', label: 'En entendimiento', activeColor: 'bg-blue-600 text-white', dot: 'bg-blue-500' },
+    { id: 'Levantamiento', label: 'Levantamiento', activeColor: 'bg-purple-600 text-white', dot: 'bg-purple-500' },
+    { id: 'Análisis TI', label: 'Análisis TI', activeColor: 'bg-indigo-600 text-white', dot: 'bg-indigo-500' },
+    { id: 'En tendency', label: 'En tendency', activeColor: 'bg-sky-600 text-white', dot: 'bg-sky-500' },
+    { id: 'Desarrollo', label: 'Desarrollo', activeColor: 'bg-amber-600 text-white', dot: 'bg-amber-500' },
+    { id: 'Pruebas funcionales', label: 'Pruebas', activeColor: 'bg-teal-600 text-white', dot: 'bg-teal-500' },
+    { id: 'Productivo', label: 'Productivo', activeColor: 'bg-emerald-600 text-white', dot: 'bg-emerald-500' },
+    { id: 'Bloqueado', label: 'Con Bloqueos', activeColor: 'bg-rose-600 text-white', dot: 'bg-rose-500' },
+    { id: 'Pausado', label: 'Pausados', activeColor: 'bg-amber-800 text-white', dot: 'bg-amber-600' },
+    { id: 'Cerrado', label: 'Cerrados', activeColor: 'bg-slate-700 text-white', dot: 'bg-slate-500' },
+  ];
+
+  const getStatusCount = (statusId: string) => {
+    if (statusId === 'Todos') return projects.length;
+    if (statusId === 'Bloqueado') return projects.filter((p) => (p.bloqueos_activos || 0) > 0).length;
+    if (statusId === 'Pruebas funcionales') {
+      return projects.filter((p) => p.estado === 'Pruebas funcionales' || p.estado === 'Pruebas unitarias').length;
+    }
+    return projects.filter((p) => p.estado === statusId).length;
+  };
+
+  const getTendencyBadge = (status: string) => {
     switch (status) {
       case 'Productivo':
-        return 'bg-emerald-100 text-emerald-800 border-emerald-300';
+        return {
+          color: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+          dot: 'bg-emerald-500',
+        };
       case 'Desarrollo':
-        return 'bg-amber-100 text-amber-800 border-amber-300';
+        return {
+          color: 'bg-amber-50 text-amber-900 border-amber-200',
+          dot: 'bg-amber-500',
+        };
       case 'Análisis TI':
-        return 'bg-indigo-100 text-indigo-800 border-indigo-300';
+        return {
+          color: 'bg-indigo-50 text-indigo-800 border-indigo-200',
+          dot: 'bg-indigo-500',
+        };
       case 'En tendency':
-        return 'bg-sky-100 text-sky-800 border-sky-300';
+        return {
+          color: 'bg-sky-50 text-sky-800 border-sky-200',
+          dot: 'bg-sky-500',
+        };
       case 'Levantamiento':
-        return 'bg-purple-100 text-purple-800 border-purple-300';
+        return {
+          color: 'bg-purple-50 text-purple-800 border-purple-200',
+          dot: 'bg-purple-500',
+        };
       case 'Pruebas unitarias':
       case 'Pruebas funcionales':
-        return 'bg-teal-100 text-teal-800 border-teal-300';
+        return {
+          color: 'bg-teal-50 text-teal-800 border-teal-200',
+          dot: 'bg-teal-500',
+        };
       case 'Pausado':
-        return 'bg-amber-100 text-amber-800 border-amber-300';
+        return {
+          color: 'bg-slate-100 text-slate-700 border-slate-300',
+          dot: 'bg-slate-400',
+        };
       case 'Cerrado':
-        return 'bg-slate-200 text-slate-700 border-slate-300';
+        return {
+          color: 'bg-zinc-100 text-zinc-600 border-zinc-300',
+          dot: 'bg-zinc-400',
+        };
       case 'En entendimiento':
       default:
-        return 'bg-blue-50 text-blue-800 border-blue-200';
+        return {
+          color: 'bg-blue-50 text-blue-800 border-blue-200',
+          dot: 'bg-blue-500',
+        };
     }
   };
 
@@ -167,7 +219,11 @@ export default function AdminPage() {
 
     const matchesStatus =
       filterStatus === 'Todos' ||
-      (filterStatus === 'Bloqueado' ? (p.bloqueos_activos || 0) > 0 : p.estado === filterStatus);
+      (filterStatus === 'Bloqueado'
+        ? (p.bloqueos_activos || 0) > 0
+        : filterStatus === 'Pruebas funcionales'
+        ? p.estado === 'Pruebas funcionales' || p.estado === 'Pruebas unitarias'
+        : p.estado === filterStatus);
 
     return matchesSearch && matchesStatus;
   });
@@ -277,36 +333,26 @@ export default function AdminPage() {
               />
             </div>
 
-            {/* Actions & Filters Bar */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1 max-w-xl">
-                <div className="relative flex-1">
-                  <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-                  <input
-                    type="text"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Buscar por proyecto, cliente o responsable..."
-                    className="w-full pl-9 pr-4 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-hidden transition-all"
-                  />
-                </div>
-
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-                  {['Todos', 'Desarrollo', 'Análisis TI', 'En tendency', 'Productivo', 'Bloqueado', 'Pausado'].map((st) => (
-                    <button
-                      key={st}
-                      type="button"
-                      onClick={() => setFilterStatus(st)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
-                        filterStatus === st
-                          ? 'bg-slate-900 text-white shadow-2xs'
-                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                      }`}
-                    >
-                      {st}
-                    </button>
-                  ))}
-                </div>
+            {/* Actions & Filters Toolbar */}
+            <div className="bg-white rounded-2xl border border-slate-200 p-3.5 sm:p-4 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Buscar por nombre de proyecto, cliente o responsable..."
+                  className="w-full pl-9 pr-8 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-hidden transition-all"
+                />
+                {search && (
+                  <button
+                    type="button"
+                    onClick={() => setSearch('')}
+                    className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 p-1"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
 
               <button
@@ -320,6 +366,48 @@ export default function AdminPage() {
                 <FolderPlus className="w-4 h-4" />
                 Nuevo Proyecto
               </button>
+            </div>
+
+            {/* Dedicated Status Filter Bar (Full width, No cutting off, Live project counts) */}
+            <div className="bg-white rounded-2xl border border-slate-200/90 p-2.5 sm:p-3 shadow-xs">
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-thin scrollbar-thumb-slate-200">
+                <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider pl-1.5 pr-2 border-r border-slate-200 shrink-0">
+                  <Filter className="w-3.5 h-3.5 text-slate-400" />
+                  <span className="hidden sm:inline">Estados</span>
+                </div>
+                {ALL_FILTER_STATUSES.map((st) => {
+                  const count = getStatusCount(st.id);
+                  const isSelected = filterStatus === st.id;
+                  return (
+                    <button
+                      key={st.id}
+                      type="button"
+                      onClick={() => setFilterStatus(st.id)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2 shrink-0 ${
+                        isSelected
+                          ? `${st.activeColor} shadow-xs scale-[1.02]`
+                          : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/60'
+                      }`}
+                    >
+                      <span
+                        className={`w-2 h-2 rounded-full shrink-0 ${
+                          isSelected ? 'bg-white' : st.dot
+                        }`}
+                      />
+                      <span>{st.label}</span>
+                      <span
+                        className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                          isSelected
+                            ? 'bg-white/20 text-white'
+                            : 'bg-slate-200/80 text-slate-600'
+                        }`}
+                      >
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Project List */}
@@ -357,6 +445,7 @@ export default function AdminPage() {
                   const totalPhases = project.phases?.length || 0;
                   const completedPhases =
                     project.phases?.filter((p) => p.estado === 'Terminado').length || 0;
+                  const badge = getTendencyBadge(project.estado);
 
                   return (
                     <div
@@ -370,22 +459,19 @@ export default function AdminPage() {
                             {project.cliente || 'Patprimo'}
                           </span>
 
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-2">
                             {hasBlocks && (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800 animate-pulse border border-rose-200">
-                                <AlertTriangle className="w-3 h-3 text-rose-600" />
-                                {project.bloqueos_activos}{' '}
-                                {project.bloqueos_activos === 1 ? 'Bloqueo' : 'Bloqueos'}
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 animate-pulse border border-rose-200">
+                                <AlertTriangle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                                <span>{project.bloqueos_activos} {project.bloqueos_activos === 1 ? 'Bloqueo' : 'Bloqueos'}</span>
                               </span>
                             )}
 
                             <span
-                              className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold border ${getTendencyBadgeColor(
-                                project.estado
-                              )}`}
+                              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border shadow-2xs ${badge.color}`}
                             >
-                              <span className="text-[10px] font-medium text-slate-400">Tendency:</span>
-                              {project.estado}
+                              <span className={`w-2 h-2 rounded-full shrink-0 ${badge.dot}`} />
+                              <span>{project.estado}</span>
                             </span>
                           </div>
                         </div>

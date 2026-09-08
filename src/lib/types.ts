@@ -65,10 +65,15 @@ export interface PhaseBlock {
   activo: boolean;
 }
 
+export type TeamRole = 'admin' | 'pm' | 'developer';
+
 export interface AdminUser {
   id: string;
   email: string;
   nombre: string;
+  rol?: TeamRole;
+  activo?: boolean;
+  autorizado_por?: string | null;
   created_at: string;
 }
 
@@ -78,11 +83,13 @@ export interface GerenciaAccess {
   activo: boolean;
   fecha_solicitud: string;
   fecha_activacion: string | null;
+  activado_por?: string | null;
 }
 
 export interface UserSession {
   email: string;
   nombre: string;
   role: 'admin' | 'gerencia';
+  teamRole?: TeamRole;
   activo: boolean;
 }

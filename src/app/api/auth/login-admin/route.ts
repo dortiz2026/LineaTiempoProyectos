@@ -30,6 +30,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Este usuario no tiene permisos de administrador o no está registrado en el sistema' }, { status: 401 });
     }
 
+    if (user.activo === false) {
+      return NextResponse.json(
+        { error: 'Tu usuario se encuentra inactivo o desautorizado por el administrador para gestionar proyectos' },
+        { status: 403 }
+      );
+    }
+
     const isMatch = verifyPassword(password, user.password_hash);
     if (!isMatch) {
       return NextResponse.json({ error: 'Contraseña incorrecta' }, { status: 401 });
@@ -39,6 +46,7 @@ export async function POST(request: Request) {
       email: user.email,
       nombre: user.nombre || 'Administrador',
       role: 'admin' as const,
+      teamRole: (user.rol as any) || 'admin',
       activo: true,
     };
 
