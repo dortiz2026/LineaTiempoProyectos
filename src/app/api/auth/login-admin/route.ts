@@ -12,10 +12,6 @@ export async function POST(request: Request) {
 
     const cleanEmail = email.trim().toLowerCase();
 
-    if (!isAdminEmail(cleanEmail)) {
-      return NextResponse.json({ error: 'Este usuario no tiene permisos de administrador' }, { status: 403 });
-    }
-
     const { data: user, error } = await supabaseAdmin
       .from('admin_users')
       .select('*')
@@ -31,7 +27,7 @@ export async function POST(request: Request) {
     }
 
     if (!user) {
-      return NextResponse.json({ error: 'Usuario administrador no encontrado en el sistema' }, { status: 401 });
+      return NextResponse.json({ error: 'Este usuario no tiene permisos de administrador o no está registrado en el sistema' }, { status: 401 });
     }
 
     const isMatch = verifyPassword(password, user.password_hash);

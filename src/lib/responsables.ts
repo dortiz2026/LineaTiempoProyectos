@@ -1,6 +1,7 @@
 export const DEFAULT_RESPONSABLES: string[] = [
   'Daniel Ortiz',
   'Lorena Sabogal',
+  'Diego Rodríguez',
 ];
 
 export const STORAGE_KEY = 'patprimo_frequent_responsables';

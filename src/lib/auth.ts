@@ -9,6 +9,7 @@ const COOKIE_NAME = 'patprimo_session';
 export const ADMIN_EMAILS = [
   'dortiz@patprimo.com.co',
   'lsabogal@patprimo.com.co',
+  'dirodriguez@patprimo.com.co',
 ];
 
 export function isAllowedDomain(email: string): boolean {
